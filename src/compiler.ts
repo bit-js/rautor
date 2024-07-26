@@ -47,7 +47,7 @@ export function node_compile<T>(
   // Check the current node store
   const nodeStore = node[0];
   if (nodeStore !== null)
-    builder.push(`if(l===${pathLenPrefix}${pathLenNum})return ${compileCallback(nodeStore, addValue)};`);
+    builder.push(`if(l===${pathLenPrefix}${pathLenNum}){${compileCallback(nodeStore, addValue)}}`);
 
   // Check for children
   if (node[3] !== null) {
@@ -101,7 +101,7 @@ export function node_compile<T>(
     // Check slash index and get the parameter value if store is found
     if (paramHasStore)
       // eslint-disable-next-line
-      builder.push(`if(${paramHasInert ? 'i' : nextSlashIdx}===-1){a.push(p.substring(${prevIndex}));return ${compileCallback(params[0]!, addValue)}}`);
+      builder.push(`if(${paramHasInert ? 'i' : nextSlashIdx}===-1){a.push(p.substring(${prevIndex}));${compileCallback(params[0]!, addValue)}}`);
 
     if (paramHasInert) {
       builder.push(`if(${paramHasStore ? '' : 'i!==-1&&'}i!==${prevIndex}){a.push(p.substring(${prevIndex},i));`);
@@ -126,7 +126,7 @@ export function node_compile<T>(
     if (noStore) builder.push(`if(l!==${pathLenPrefix}${pathLenNum}){`);
 
     // Add to params and return
-    builder.push(`a.push(p.substring(${pathLenPrefix}${pathLenNum}));return ${compileCallback(node[1], addValue)};`);
+    builder.push(`a.push(p.substring(${pathLenPrefix}${pathLenNum}));{${compileCallback(node[1], addValue)}}`);
 
     // Close bracket for the previous if
     if (noStore) builder.push('}');

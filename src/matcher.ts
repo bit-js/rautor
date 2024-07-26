@@ -2,7 +2,7 @@ import { tree_compile, type CompileCallback } from './compiler';
 import { tree_init, tree_register, type Tree } from './tree';
 
 // eslint-disable-next-line
-const compile: CompileCallback<any> = (item, addValue) => addValue(item);
+const compile: CompileCallback<any> = (item, addValue) => 'return ' + addValue(item);
 
 export type MatchCallback<T> = (path: string, params: string[]) => T | null;
 
