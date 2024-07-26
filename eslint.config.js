@@ -208,7 +208,6 @@ export default tsEslint.config({
         "@typescript-eslint/no-var-requires": "error",
         "@typescript-eslint/non-nullable-type-assertion-style": "error",
         "@typescript-eslint/parameter-properties": "error",
-        "@typescript-eslint/prefer-destructuring": "warn",
         "@typescript-eslint/prefer-function-type": "warn",
         "@typescript-eslint/prefer-includes": "warn",
         "@typescript-eslint/prefer-literal-enum-member": "error",

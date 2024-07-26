@@ -1,9 +1,15 @@
 {
-  "name": "rautor",
+  "name": "@bit-js/rautor",
   "version": "1.0.0",
   "author": "aquapi",
   "license": "MIT",
-  "keywords": [],
+  "keywords": [
+    "small",
+    "fast",
+    "tree",
+    "router"
+  ],
+  "description": "A small and fast radix tree router",
   "type": "module",
   "main": "./index.js",
   "types": "./index.d.ts",
