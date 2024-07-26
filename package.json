@@ -1,0 +1,25 @@
+{
+  "name": "rautor",
+  "version": "1.0.0",
+  "author": "aquapi",
+  "license": "MIT",
+  "keywords": [],
+  "type": "module",
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "scripts": {
+    "build:test": "bun scripts/build.ts && bun test",
+    "build:publish": "bun scripts/publish.ts",
+    "lint": "eslint ./src",
+    "lint:fix": "eslint ./src --fix"
+  },
+  "devDependencies": {
+    "@stylistic/eslint-plugin": "latest",
+    "eslint": "latest",
+    "typescript-eslint": "latest",
+    "eslint-plugin-jsdoc": "latest",
+    "@types/bun": "latest",
+    "mitata": "latest",
+    "typescript": "latest"
+  }
+}
