@@ -25,8 +25,7 @@ export function node_compile<T>(
 
   // Whether an index tracker has been defined
   isChildParam: boolean,
-  isNestedChildParam: boolean,
-  isNotStart: boolean
+  isNestedChildParam: boolean
 ): void {
   const builder = state[0];
   const compileCallback = state[1];
@@ -38,18 +37,11 @@ export function node_compile<T>(
 
   const isNotRoot = partLen !== 1;
   if (isNotRoot) {
-    if (isNotStart) {
-      // Skip the first character since it has already
-      // been checked by the previous iteration
-      for (let i = 1; i < partLen; ++i) builder.push(`if(p.charCodeAt(${pathLenPrefix}${pathLenNum++}))===${part.charCodeAt(i)})`);
+    // Skip the first character since it has already
+    // been checked by the previous iteration
+    for (let i = 1; i < partLen; ++i) builder.push(`if(p.charCodeAt(${pathLenPrefix}${pathLenNum++})===${part.charCodeAt(i)})`);
 
-      builder.push('{');
-    } else {
-      builder.push(`if(p.startsWith('${part}')){`);
-      pathLenNum += partLen - 1;
-    }
-
-    isNotStart = true;
+    builder.push('{');
   }
 
   // Check the current node store
@@ -59,17 +51,17 @@ export function node_compile<T>(
 
   // Check for children
   if (node[3] !== null) {
-    ++pathLenNum;
-
     const children = node[3];
     const childKeys = Object.keys(children);
+
+    const newPathLenNum = pathLenNum + 1;
 
     if (childKeys.length === 1) {
       builder.push(`if(p.charCodeAt(${pathLenPrefix}${pathLenNum})===${childKeys[0]}){`);
 
       // @ts-expect-error key always exist
       // eslint-disable-next-line
-      node_compile(children[childKeys[0]], state, pathLenNum, pathLenPrefix, isChildParam, isNestedChildParam, isNotStart);
+      node_compile(children[childKeys[0]], state, newPathLenNum, pathLenPrefix, isChildParam, isNestedChildParam);
 
       builder.push('}');
     } else {
@@ -78,7 +70,7 @@ export function node_compile<T>(
       for (const key in children) {
         builder.push(`case ${key}:`);
 
-        node_compile(children[key], state, pathLenNum, pathLenPrefix, isChildParam, isNestedChildParam, isNotStart);
+        node_compile(children[key], state, newPathLenNum, pathLenPrefix, isChildParam, isNestedChildParam);
 
         builder.push('break;');
       }
@@ -109,7 +101,7 @@ export function node_compile<T>(
     // Check slash index and get the parameter value if store is found
     if (paramHasStore)
       // eslint-disable-next-line
-      builder.push(`if(${paramHasInert ? 'i' : nextSlashIdx})===-1){a.push(p.substring(${prevIndex}));return ${compileCallback(params[0]!, addValue)}}`);
+      builder.push(`if(${paramHasInert ? 'i' : nextSlashIdx}===-1){a.push(p.substring(${prevIndex}));return ${compileCallback(params[0]!, addValue)}}`);
 
     if (paramHasInert) {
       builder.push(`if(${paramHasStore ? '' : 'i!==-1&&'}i!==${prevIndex}){a.push(p.substring(${prevIndex},i));`);
@@ -119,7 +111,7 @@ export function node_compile<T>(
         params[1]!, state, 1, 'i+',
         // eslint-disable-next-line
         // If this is the first parameter children this will be false
-        true, isChildParam, isNotStart
+        true, isChildParam
       );
 
       builder.push('}');
@@ -131,7 +123,7 @@ export function node_compile<T>(
     const noStore = nodeStore === null;
 
     // Wildcard should not match static case
-    if (noStore) builder.push(`if(l===${pathLenPrefix}${pathLenNum}){`);
+    if (noStore) builder.push(`if(l!==${pathLenPrefix}${pathLenNum}){`);
 
     // Add to params and return
     builder.push(`a.push(p.substring(${pathLenPrefix}${pathLenNum}));return ${compileCallback(node[1], addValue)};`);
@@ -160,6 +152,6 @@ export function tree_compile<T>(tree: Tree<T>, compile: CompileCallback<T>): [Co
   ];
 
   // eslint-disable-next-line
-  node_compile(tree[0]!, state, 1, '', false, false, false);
+  node_compile(tree[0]!, state, 1, '', false, false);
   return [state, keys, values];
 }
