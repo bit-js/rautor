@@ -4,7 +4,7 @@ import { tree_init, tree_register, type Tree } from './tree';
 // eslint-disable-next-line
 const compile: CompileCallback<any> = (item, addValue) => addValue(item);
 
-export class Matcher<T> {
+export default class Matcher<T> {
   public readonly tree: Tree<T>;
 
   public constructor() {
