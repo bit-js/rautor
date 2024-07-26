@@ -23,7 +23,6 @@ export default class Matcher<T> {
 
     // eslint-disable-next-line
     const fn = Function(...output[1], `return (p,a)=>{const l=p.length;${output[0][0].join('')};return null;}`)(...output[2]) as MatchCallback<T>;
-    console.log(fn.toString());
     if (tree[1] === null) return fn;
 
     const staticMatcher = tree[1];
