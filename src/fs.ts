@@ -4,48 +4,36 @@ export interface Options<T> {
   /**
    * Return the metadata associated to the path to match later
    *
-   * This only run once while scanning to retrieve the metadata
+   * This only run once while scanning
    */
   on: (path: string) => T;
 
   /**
-   * Can synchronously and return the paths as a string list or iterable
+   * Scan synchronously and return the paths as a string list or iterable
    */
   scan: (dir: string) => Iterable<string>;
 
   /**
-   * Translate path to patterns
+   * Return a list of patterns that will resolve to the path
+   *
+   * By default the path will be prefixed with slash if it doesn't, eg. `index.ts` -> `/index.ts`
    */
   translate?: (path: string) => Iterable<string>;
 }
 
-// eslint-disable-next-line
-const defaultTranslate: Options<any>['translate'] = (path: string) => [path.charCodeAt(0) === 47 ? path : '/' + path];
-
-export default class FileSystemRouter<T> {
-  public readonly options: Required<Options<T>>;
-
-  public constructor(options: Options<T>) {
-    options.translate ??= defaultTranslate;
-    // @ts-expect-error All optional props have been assigned
-    this.options = options;
-  }
-
-  /**
-   * Return a callback for matching paths
-   */
-  public scan(dir: string): MatchCallback<T> {
+export function createRouter<T>(options: Options<T>): (dir: string) => MatchCallback<T> {
+  return (dir) => {
     const matcher = new Matcher<T>();
 
     // Register paths
-    const opts = this.options;
+    const translate = options.translate;
+    const handle = options.on;
 
-    const translate = opts.translate;
-    const handle = opts.on;
-
-    for (const path of opts.scan(dir)) for (const pattern of translate(path)) matcher.on(pattern, handle(path));
+    // eslint-disable-next-line
+    if (typeof translate === 'undefined') for (const path of options.scan(dir)) matcher.on(path.charCodeAt(0) === 47 ? path : '/' + path, handle(path));
+    else for (const path of options.scan(dir)) for (const pattern of translate(path)) matcher.on(pattern, handle(path));
 
     // Return the compiled matcher
     return matcher.compile();
-  }
+  };
 }
