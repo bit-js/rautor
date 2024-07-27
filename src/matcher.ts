@@ -6,6 +6,9 @@ const compile: CompileCallback<any> = (item, addValue) => 'return ' + addValue(i
 
 export type MatchCallback<T> = (path: string, params: string[]) => T | null;
 
+/**
+ * Basic path matcher
+ */
 export default class Matcher<T> {
   public readonly tree: Tree<T>;
 

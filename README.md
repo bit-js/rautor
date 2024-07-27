@@ -1,8 +1,12 @@
 # Rautor
 
-A small, fast, compile-only router.
+A small, fast, compile-only URL router.
 
-Example matcher usage:
+## Modules
+
+### Matcher
+
+Example usage:
 
 ```ts
 import Matcher from "@bit-js/rautor/matcher";
@@ -28,6 +32,6 @@ const r2 = match("/not-found", []);
 r2; // null
 ```
 
-## Modules
+### Others
 
-See [rautor/src](https://github.com/bit-js/rautor/tree/main/src)
+See more in [`rautor/src`](https://github.com/bit-js/rautor/tree/main/src)

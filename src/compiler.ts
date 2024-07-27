@@ -107,6 +107,7 @@ export function node_compile<T>(
       builder.push(`if(${paramHasStore ? '' : 'i!==-1&&'}i!==${prevIndex}){a.push(p.substring(${prevIndex},i));`);
 
       node_compile(
+        // Skip the '/' (i + 1)
         // eslint-disable-next-line
         params[1]!, state, 1, 'i+',
         // eslint-disable-next-line
