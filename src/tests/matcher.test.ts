@@ -6,9 +6,10 @@ const matcher = new Matcher<number>();
 for (let i = 0; i < pathsCount; ++i) matcher.on(paths[i], i);
 
 const match = matcher.compile();
+console.log(match.toString());
 
 for (let i = 0; i < pathsCount; ++i) {
   test(paths[i], () => {
-    expect(match(generatePath(paths[i]), [])).toBe(i);
+    expect(match(generatePath(paths[i]))?.[0]).toBe(i);
   });
 }

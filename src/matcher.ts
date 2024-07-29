@@ -1,10 +1,12 @@
-import { tree_compile, type CompileCallback } from './compiler';
-import { tree_init, tree_register, type Tree } from './tree';
+import { compile_state_init, compile_state_result, type CompileCallback } from './compiler';
+import { tree_compile, tree_init, tree_register, type Tree } from './tree';
 
 // eslint-disable-next-line
-const compile: CompileCallback<any> = (item, addValue) => 'return ' + addValue(item);
+const compile: CompileCallback<any> = (item, state, isParam) => {
+  state[0].push(isParam ? `return [${state[2](item)},a];` : `return [${state[2](item)},[]];`);
+};
 
-export type MatchCallback<T> = (path: string, params: string[]) => T | null;
+export type MatchCallback<T> = (path: string) => [T, string[]] | null;
 
 /**
  * Basic path matcher
@@ -21,14 +23,13 @@ export default class Matcher<T> {
   }
 
   public compile(): MatchCallback<T> {
+    const keys: string[] = [];
+    const values: any[] = [];
+    const state = compile_state_init(compile, keys, values);
+
     const tree = this.tree;
-    const output = tree_compile(tree, compile);
-
+    tree_compile(tree, state);
     // eslint-disable-next-line
-    const fn = Function(...output[1], `return (p,a)=>{const l=p.length;${output[0][0].join('')};return null;}`)(...output[2]) as MatchCallback<T>;
-    if (tree[1] === null) return fn;
-
-    const staticMatcher = tree[1];
-    return (path, params) => staticMatcher[path] ?? fn(path, params);
+    return Function(...keys, `return (p)=>{${compile_state_result(state)};return null;}`)(...values) as MatchCallback<T>;
   }
 }
