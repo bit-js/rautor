@@ -19,16 +19,13 @@ matcher.on("/*", "Hello");
 // Compile the matcher
 const match = matcher.compile();
 
-const r0 = match("/", []);
-r0; // 'Hi'
+const r0 = match("/");
+r0; // ['Hi', []]
 
-const params = []; // A list to hold params
-const r1 = match("/reve", params);
+const r1 = match("/reve");
+r1; // ['Hello', ['reve']];
 
-params; // ['reve']
-r1; // 'Hello'
-
-const r2 = match("/not-found", []);
+const r2 = match("/not-found");
 r2; // null
 ```
 
