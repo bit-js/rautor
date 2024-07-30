@@ -2,6 +2,25 @@
 
 A small, fast, compile-only URL router.
 
+## Patterns
+
+Rautor supports URL parameters and wildcards.
+
+To capture the value of a path part, use the `*` character.
+
+```ts
+"/id/*"; // Capture the value of the part after '/id/' (value does not including slash)
+"/id/*/dashboard"; // Capture the value of the part between '/id/' and '/dashboard'
+```
+
+To match all parts after a segment, use `**` at the end of the pattern.
+
+```ts
+"/id/**"; // Capture everything after '/id/'
+```
+
+Captured parameters will be stored in an array.
+
 ## Modules
 
 ### Matcher
@@ -79,7 +98,7 @@ export interface Options<T> {
 
 ### Compiler stack
 
-This guide will go through the process of building a web standard compliant framework with the compiler stack.
+This guide will go through the process of building a simple server API with the compiler stack.
 
 To start, import the `request-matcher` and the `compiler` module:
 
@@ -156,7 +175,7 @@ export class App {
   /**
    * Build and return the fetch function
    */
-  public build() {
+  public build(): (req: Request) => any {
     const keys: string[] = [];
     const values: any[] = [];
 
@@ -179,6 +198,17 @@ The last line in `build()` does the following things:
 - Call the created function with the parameters listed in `values`, we get the final request handler function.
 
 The `injectValue` callback in `state` was to add the corresponding key and value to the lists.
+
+Example usage:
+
+```ts
+const app = new App();
+
+app.register("GET", "/", (req) => new Response("Hi"));
+app.all("/*", () => new Response("Hello"));
+
+const fetch = app.build();
+```
 
 ### Others
 
