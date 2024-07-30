@@ -37,7 +37,7 @@ export function node_slice_part_from<T>(node: Node<T>, idx: number): Node<T> {
 }
 
 // eslint-disable-next-line
-export function node_split_from<T>(node: Node<T>, idx: number) {
+export function node_split_from<T>(node: Node<T>, idx: number): void {
   const nextNode = node_slice_part_from(node, idx);
   node_reset(node, node[4].substring(0, idx));
   node_add_child(node, nextNode);
@@ -140,7 +140,7 @@ export function node_insert<T>(node: Node<T>, path: string, store: T): T {
     return node[0] ??= store;
 }
 
-// p is the path
+// p is the path (argument)
 // a is the params
 // l is the path length
 // eslint-disable-next-line

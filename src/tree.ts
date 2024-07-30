@@ -12,14 +12,14 @@ export function tree_init<T>(): Tree<T> {
 }
 
 // eslint-disable-next-line
-export function tree_register<T>(tree: Tree<T>, path: string, store: T) {
+export function tree_register<T>(tree: Tree<T>, path: string, store: T): void {
   if (path.includes('*'))
     node_insert(tree[0] ??= node_init_root(), path, store);
   else
     (tree[1] ??= {})[path] = store;
 }
 
-// p is the path
+// p is the path (argument)
 // a is the params
 // l is the path length
 // eslint-disable-next-line

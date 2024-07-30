@@ -87,14 +87,15 @@ To start, import the `request-matcher` and the `compiler` module:
 import {
   request_matcher_init,
   request_matcher_register,
-  request_matcher_compile,
+  request_matcher_register_all,
+  request_matcher_compile
   type RequestMatcher,
 } from "@bit-js/rautor/request-matcher";
 
 import {
   compile_state_init,
   compile_state_result,
-  type CompileCallback,
+  type CompileCallback
 } from "@bit-js/rautor/compiler";
 ```
 
@@ -122,6 +123,7 @@ const compileCb: CompileCallback<Handler> = (item, state, hasParam) => {
   // If there's one arg or this route does not have parameters then pass in the request
   // Else pass in the request with params
   builder.push(
+    // Add a statement that returns the result of the function call
     `return ${injectValue(item)}(${argsCount === 0 ? "" : argsCount === 1 || !hasParam ? "r" : "r,a"})`,
   );
 };
@@ -137,11 +139,24 @@ export class App {
     this.requestMatcher = request_matcher_init<Handler>();
   }
 
-  register(method: string, path: string, handler: Handler) {
+  /**
+   * Register a handler
+   */
+  public register(method: string, path: string, handler: Handler) {
     request_matcher_register(this.requestMatcher, method, path, handler);
   }
 
-  build() {
+  /**
+   * Register a handler
+   */
+  public all(path: string, handler: Handler) {
+    request_matcher_register_all(this.requestMatcher, path, handler);
+  }
+
+  /**
+   * Build and return the fetch function
+   */
+  public build() {
     const keys: string[] = [];
     const values: any[] = [];
 
