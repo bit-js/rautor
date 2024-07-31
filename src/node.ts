@@ -156,7 +156,7 @@ export function node_compile<T>(
   isNestedChildParam: boolean
 ): void {
   const builder = state[0];
-  const compileCallback = state[3];
+  const compileCallback = state[1];
 
   // Part stuff
   const part = node[4];

@@ -29,7 +29,7 @@ export function tree_compile<T>(tree: Tree<T>, state: CompileState<T>): void {
 
     // Compile static entries
     if (tree[1] !== null) {
-      const compileCallback = state[3];
+      const compileCallback = state[1];
       const entries = Object.entries(tree[1]);
 
       // First entry should check with 'if'

@@ -1,8 +1,8 @@
-// JDT top level definition
+// JTD top level definition
 export type UnknownInferredType = Record<string, unknown>;
 
-// JDT type schema
-export interface JDTTypeMap {
+// JTD type schema
+export interface JTDTypeMap {
   boolean: boolean;
 
   string: string;
@@ -10,6 +10,8 @@ export interface JDTTypeMap {
 
   float32: number;
   float64: number;
+
+  int: number;
 
   int8: number;
   uint8: number;
@@ -21,87 +23,87 @@ export interface JDTTypeMap {
   uint32: number;
 }
 
-export interface JDTTypeSchema {
-  type: keyof JDTTypeMap;
+export interface JTDTypeSchema {
+  type: keyof JTDTypeMap;
 }
 
-export type InferJDTTypeSchema<T extends JDTTypeSchema> = JDTTypeMap[T['type']];
+export type InferJTDTypeSchema<T extends JTDTypeSchema> = JTDTypeMap[T['type']];
 
-// JDT enum
-export interface JDTEnumSchema {
+// JTD enum
+export interface JTDEnumSchema {
   enum: string[];
 }
 
-export type InferJDTEnumSchema<T extends JDTEnumSchema> = T['enum'][number];
+export type InferJTDEnumSchema<T extends JTDEnumSchema> = T['enum'][number];
 
-// JDT elements schema
-export interface JDTElementsSchema {
-  elements: JDTSchema;
+// JTD elements schema
+export interface JTDElementsSchema {
+  elements: JTDSchema;
 }
 
-export type InferJDTElementsSchema<T extends JDTElementsSchema, Defs extends UnknownInferredType> = InferJDTSchema<T['elements'], Defs>[];
+export type InferJTDElementsSchema<T extends JTDElementsSchema, Defs extends UnknownInferredType> = InferJTDSchema<T['elements'], Defs>[];
 
-// JDT properties schema
-export interface JDTPropertiesSchema {
-  properties?: Record<string, JDTSchema>;
-  optionalProperties?: Record<string, JDTSchema>;
+// JTD properties schema
+export interface JTDPropertiesSchema {
+  properties?: Record<string, JTDSchema>;
+  optionalProperties?: Record<string, JTDSchema>;
   additionalProperties?: boolean;
 }
 
-export type InferJDTPropertiesSchema<T extends JDTPropertiesSchema, Defs extends UnknownInferredType> =
-  (T['properties'] extends JDTSchemaRecord ? InferJDTSchemaRecord<T['properties'], Defs> : {})
-  & (T['optionalProperties'] extends JDTSchemaRecord ? Partial<InferJDTSchemaRecord<T['optionalProperties'], Defs>> : {})
+export type InferJTDPropertiesSchema<T extends JTDPropertiesSchema, Defs extends UnknownInferredType> =
+  (T['properties'] extends JTDSchemaRecord ? InferJTDSchemaRecord<T['properties'], Defs> : {})
+  & (T['optionalProperties'] extends JTDSchemaRecord ? Partial<InferJTDSchemaRecord<T['optionalProperties'], Defs>> : {})
   & (T['additionalProperties'] extends true ? UnknownInferredType : {});
 
-// JDT values schema
-export interface JDTValuesSchema {
-  values: JDTSchema;
+// JTD values schema
+export interface JTDValuesSchema {
+  values: JTDSchema;
 }
 
-export type InferJDTValuesSchema<T extends JDTValuesSchema, Defs extends UnknownInferredType> = Record<string, InferJDTSchema<T['values'], Defs>>;
+export type InferJTDValuesSchema<T extends JTDValuesSchema, Defs extends UnknownInferredType> = Record<string, InferJTDSchema<T['values'], Defs>>;
 
-// JDT discriminator schema
-export interface JDTDiscriminatorSchema {
+// JTD discriminator schema
+export interface JTDDiscriminatorSchema {
   discriminator: string;
-  mapping: Record<string, JDTPropertiesSchema>;
+  mapping: Record<string, JTDPropertiesSchema>;
 }
 
-export type InferJDTDiscriminatorSchema<T extends JDTDiscriminatorSchema, Defs extends UnknownInferredType> = {
+export type InferJTDDiscriminatorSchema<T extends JTDDiscriminatorSchema, Defs extends UnknownInferredType> = {
   [K in keyof T['mapping']]: {
     [D in T['discriminator']]: K;
-  } & InferJDTPropertiesSchema<T['mapping'][K], Defs>
+  } & InferJTDPropertiesSchema<T['mapping'][K], Defs>
 };
 
-// JDT ref
-export interface JDTRef<T extends UnknownInferredType = any> {
-  ref: keyof T;
+// JTD ref
+export interface JTDRef {
+  ref: string;
 }
 
-export type InferJDTRef<T extends JDTRef, Defs extends UnknownInferredType> = T['ref'] extends keyof Defs ? Defs[T['ref']] : any;
+export type InferJTDRef<T extends JTDRef, Defs extends UnknownInferredType> = T['ref'] extends keyof Defs ? Defs[T['ref']] : any;
 
 // Generic schema
-export interface JDTCommonSchema {
+export interface JTDCommonSchema {
   nullable?: boolean;
   metadata?: any;
 }
 
-export type JDTSchema = ({} | JDTTypeSchema | JDTElementsSchema | JDTPropertiesSchema | JDTValuesSchema | JDTDiscriminatorSchema) & JDTCommonSchema;
-export type InferJDTSchema<T extends JDTSchema, Defs extends UnknownInferredType> = (
-  T extends JDTTypeSchema ? InferJDTTypeSchema<T> :
-    T extends JDTEnumSchema ? InferJDTEnumSchema<T> :
-      T extends JDTElementsSchema ? InferJDTElementsSchema<T, Defs> :
-        T extends JDTPropertiesSchema ? InferJDTPropertiesSchema<T, Defs> :
-          T extends JDTValuesSchema ? InferJDTValuesSchema<T, Defs> :
-            T extends JDTDiscriminatorSchema ? InferJDTDiscriminatorSchema<T, Defs> :
-              T extends JDTRef ? InferJDTRef<T, Defs> : any
+export type JTDSchema = ({} | JTDTypeSchema | JTDElementsSchema | JTDPropertiesSchema | JTDValuesSchema | JTDDiscriminatorSchema) & JTDCommonSchema;
+export type InferJTDSchema<T extends JTDSchema, Defs extends UnknownInferredType> = (
+  T extends JTDTypeSchema ? InferJTDTypeSchema<T> :
+  T extends JTDEnumSchema ? InferJTDEnumSchema<T> :
+  T extends JTDElementsSchema ? InferJTDElementsSchema<T, Defs> :
+  T extends JTDPropertiesSchema ? InferJTDPropertiesSchema<T, Defs> :
+  T extends JTDValuesSchema ? InferJTDValuesSchema<T, Defs> :
+  T extends JTDDiscriminatorSchema ? InferJTDDiscriminatorSchema<T, Defs> :
+  T extends JTDRef ? InferJTDRef<T, Defs> : any
 ) | (T['nullable'] extends true ? null : never);
 
 // Generic schema record
-export type JDTSchemaRecord = Record<string, JDTSchema>;
-export type InferJDTSchemaRecord<T extends JDTSchemaRecord, Defs extends UnknownInferredType> = {
-  [K in keyof T]: InferJDTSchema<T[K], Defs>;
+export type JTDSchemaRecord = Record<string, JTDSchema>;
+export type InferJTDSchemaRecord<T extends JTDSchemaRecord, Defs extends UnknownInferredType> = {
+  [K in keyof T]: InferJTDSchema<T[K], Defs>;
 };
 
-// Root JDT schema
-export type RootJDTSchema = JDTSchema & { definition?: JDTSchemaRecord };
-export type InferRootJDTSchema<T extends RootJDTSchema> = InferJDTSchema<T, T['definition'] extends JDTSchemaRecord ? InferJDTSchemaRecord<T['definition'], {}> : {}>;
+// Root JTD schema
+export type RootJTDSchema = JTDSchema & { definitions?: JTDSchemaRecord };
+export type InferRootJTDSchema<T extends RootJTDSchema> = InferJTDSchema<T, T['definitions'] extends JTDSchemaRecord ? InferJTDSchemaRecord<T['definitions'], {}> : {}>;

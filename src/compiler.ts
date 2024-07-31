@@ -4,32 +4,35 @@ export type CompileCallback<T> = (item: T, state: CompileState<T>, hasParam: boo
 
 export type CompileState<T> = [
   builder: string[],
-  define: (literal: string) => string,
+  compile: CompileCallback<T>,
   addValue: AddValueCallback,
-  compile: CompileCallback<T>
+  delcs: string[],
+  declsCount: number
 ];
 
 // eslint-disable-next-line
-export function compile_state_init<T>(cb: CompileCallback<T>, keys: string[], values: any[], decls: string[]): CompileState<T> {
+export function compile_state_init<T>(cb: CompileCallback<T>, keys: string[], values: any[]): CompileState<T> {
   return [
     [],
-    (literal: string) => {
-      // eslint-disable-next-line
-      const key = '_' + decls.length;
-      decls.push(`const ${key}=${literal};`);
-      return key;
-    },
+    cb,
     (val: any) => {
-      const id = `f${keys.length}`;
+      // eslint-disable-next-line
+      const id = 'f' + keys.length;
       keys.push(id);
       values.push(val);
       return id;
     },
-    cb
+    [],
+    0
   ];
 }
 
 // eslint-disable-next-line
 export function compile_state_result<T>(state: CompileState<T>): string {
   return state[0].join('');
+}
+
+// eslint-disable-next-line
+export function compile_state_decls<T>(state: CompileState<T>): string {
+  return state[3].join('');
 }

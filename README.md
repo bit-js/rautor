@@ -185,7 +185,7 @@ export class App {
     // We need to feed r as a Request object
     return Function(
       ...keys,
-      `const fallback=new Response(null,{status:404});return (r)=>{${compile_state_result(state)};return fallback;}`,
+      `const fallback=new Response(null,{status:404});${compile_state_decls(state)}return (r)=>{${compile_state_result(state)};return fallback;}`,
     )(...values);
   }
 }
