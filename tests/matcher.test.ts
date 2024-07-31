@@ -1,4 +1,4 @@
-import Matcher from '../matcher';
+import Matcher from '../src/matcher';
 import { test, expect } from 'bun:test';
 import { generatePath, paths, pathsCount } from './paths';
 

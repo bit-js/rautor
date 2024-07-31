@@ -37,7 +37,7 @@ export function node_slice_part_from<T>(node: Node<T>, idx: number): Node<T> {
 }
 
 // eslint-disable-next-line
-export function node_split_from<T>(node: Node<T>, idx: number): void {
+export function node_split_from<T>(node: Node<T>, idx: number) {
   const nextNode = node_slice_part_from(node, idx);
   node_reset(node, node[4].substring(0, idx));
   node_add_child(node, nextNode);
@@ -156,7 +156,7 @@ export function node_compile<T>(
   isNestedChildParam: boolean
 ): void {
   const builder = state[0];
-  const compileCallback = state[1];
+  const compileCallback = state[3];
 
   // Part stuff
   const part = node[4];

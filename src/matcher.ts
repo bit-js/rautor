@@ -25,7 +25,7 @@ export default class Matcher<T> {
   public compile(): MatchCallback<T> {
     const keys: string[] = [];
     const values: any[] = [];
-    const state = compile_state_init(compile, keys, values);
+    const state = compile_state_init(compile, keys, values, []);
 
     const tree = this.tree;
     tree_compile(tree, state);
