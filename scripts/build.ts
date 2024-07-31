@@ -16,5 +16,5 @@ const transpiler = new Bun.Transpiler({
 for await (const path of new Bun.Glob('**/*.ts').scan('./src'))
   Bun.file(`./src/${path}`)
     .arrayBuffer()
-    .then((buf) => transpiler.transform(buf).then((res) => Bun.write(`${outdir}/${path.slice(0, -2) + 'js'}`, res)));
+    .then((buf) => transpiler.transform(buf).then((res) => res.length !== 0 ? Bun.write(`${outdir}/${path.slice(0, -2) + 'js'}`, res) : null));
 
