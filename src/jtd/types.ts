@@ -87,15 +87,15 @@ export interface JTDCommonSchema {
   metadata?: any;
 }
 
-export type JTDSchema = ({} | JTDTypeSchema | JTDElementsSchema | JTDPropertiesSchema | JTDValuesSchema | JTDDiscriminatorSchema) & JTDCommonSchema;
+export type JTDSchema = ({} | JTDTypeSchema | JTDElementsSchema | JTDPropertiesSchema | JTDValuesSchema | JTDDiscriminatorSchema | JTDRef) & JTDCommonSchema;
 export type InferJTDSchema<T extends JTDSchema, Defs extends UnknownInferredType> = (
   T extends JTDTypeSchema ? InferJTDTypeSchema<T> :
-  T extends JTDEnumSchema ? InferJTDEnumSchema<T> :
-  T extends JTDElementsSchema ? InferJTDElementsSchema<T, Defs> :
-  T extends JTDPropertiesSchema ? InferJTDPropertiesSchema<T, Defs> :
-  T extends JTDValuesSchema ? InferJTDValuesSchema<T, Defs> :
-  T extends JTDDiscriminatorSchema ? InferJTDDiscriminatorSchema<T, Defs> :
-  T extends JTDRef ? InferJTDRef<T, Defs> : any
+    T extends JTDEnumSchema ? InferJTDEnumSchema<T> :
+      T extends JTDElementsSchema ? InferJTDElementsSchema<T, Defs> :
+        T extends JTDPropertiesSchema ? InferJTDPropertiesSchema<T, Defs> :
+          T extends JTDValuesSchema ? InferJTDValuesSchema<T, Defs> :
+            T extends JTDDiscriminatorSchema ? InferJTDDiscriminatorSchema<T, Defs> :
+              T extends JTDRef ? InferJTDRef<T, Defs> : any
 ) | (T['nullable'] extends true ? null : never);
 
 // Generic schema record
