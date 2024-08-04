@@ -88,7 +88,9 @@ export interface JTDRefRepresentation<T extends string = string> {
 
 export type InferJTDRef<T, Defs> = T extends JTDRefRepresentation
   ? (T[RefSymbol] extends keyof Defs ? InferJTDRef<Defs[T[RefSymbol]], Defs> : unknown)
-  : { [K in keyof T]: InferJTDRef<T[K], Defs> };
+  : T extends UnknownInferredType
+    ? { [K in keyof T]: InferJTDRef<T[K], Defs> }
+    : T;
 
 // Generic schema
 export interface JTDCommonSchema {
