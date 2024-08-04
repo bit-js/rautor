@@ -188,7 +188,7 @@ export function jtd_json_assert_compile_conditions(schema: JTDSchema, paramName:
 }
 
 // eslint-disable-next-line
-export function jdt_json_create_assert_func<T extends RootJTDSchema>(schema: T): (o: any) => o is InferRootJTDSchema<T> {
+export function jtd_json_create_assert_func<const T extends RootJTDSchema>(schema: T): (o: any) => o is InferRootJTDSchema<T> {
   const keys: string[] = [];
   const values: any[] = [];
   // @ts-expect-error Disable compileCallback

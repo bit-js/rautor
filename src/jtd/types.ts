@@ -82,11 +82,13 @@ export interface JTDRef {
 declare const refSymbol: unique symbol;
 type RefSymbol = typeof refSymbol;
 
-export interface JTDRefRepresentation<T extends string> {
+export interface JTDRefRepresentation<T extends string = string> {
   [refSymbol]: T;
 }
 
-export type InferJTDRef<T, Defs extends UnknownInferredType> = T extends JTDRefRepresentation<string> ? (T[RefSymbol] extends keyof Defs ? Defs[T[RefSymbol]] : any) : T;
+export type InferJTDRef<T, Defs> = T extends JTDRefRepresentation
+  ? (T[RefSymbol] extends keyof Defs ? InferJTDRef<Defs[T[RefSymbol]], Defs> : unknown)
+  : { [K in keyof T]: InferJTDRef<T[K], Defs> };
 
 // Generic schema
 export interface JTDCommonSchema {
@@ -102,7 +104,7 @@ export type InferJTDSchema<T extends JTDSchema> = (
         T extends JTDPropertiesSchema ? InferJTDPropertiesSchema<T> :
           T extends JTDValuesSchema ? InferJTDValuesSchema<T> :
             T extends JTDDiscriminatorSchema ? InferJTDDiscriminatorSchema<T> :
-              T extends JTDRef ? JTDRefRepresentation<T['ref']> : any
+              T extends JTDRef ? JTDRefRepresentation<T['ref']> : unknown
 ) | (T['nullable'] extends true ? null : never);
 
 // Generic schema record

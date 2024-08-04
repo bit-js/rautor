@@ -1,4 +1,4 @@
-import { jdt_json_create_assert_func as create } from '../../src/jtd/json';
+import { jtd_json_create_assert_func as create } from '../../src/jtd/json';
 import { test, expect } from 'bun:test';
 
 test('Type schema', () => {
