@@ -1,17 +1,16 @@
 import type { CompileState } from './compiler';
 import { type tree_compile, tree_init, tree_register, type Tree } from './tree';
 
-export type MethodTrees<T> = [Record<string, Tree<T>>, Tree<T> | null];
+export type MethodTrees<T> = [Record<string, Tree<T>> | null, Tree<T> | null];
 
 // eslint-disable-next-line
 export function method_trees_init<T>(): MethodTrees<T> {
-  // eslint-disable-next-line
-  return [{}, null];
+  return [null, null];
 }
 
 // eslint-disable-next-line
 export function method_trees_register<T>(trees: MethodTrees<T>, method: string, path: string, store: T): void {
-  tree_register(trees[0][method] ??= tree_init<T>(), path, store);
+  tree_register((trees[0] ??= {})[method] ??= tree_init<T>(), path, store);
 }
 
 // eslint-disable-next-line
@@ -26,12 +25,13 @@ export function method_trees_register_all<T>(trees: MethodTrees<T>, path: string
 // eslint-disable-next-line
 export function method_trees_compile<T>(trees: MethodTrees<T>, state: CompileState<T>, compileTree: typeof tree_compile): void {
   const builder = state[0];
-  const entries = Object.entries(trees[0]);
 
-  if (entries.length === 0) {
+  if (trees[0] === null) {
     if (trees[1] !== null)
       compileTree(trees[1], state);
   } else {
+    const entries = Object.entries(trees[0]);
+
     // First entry should check with 'if'
     const firstEntry = entries[0];
     builder.push(`if(m==='${firstEntry[0]}'){`);

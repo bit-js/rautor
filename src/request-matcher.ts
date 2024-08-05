@@ -26,7 +26,8 @@ export function request_matcher_compile_tree<T>(tree: Tree<T>, state: CompileSta
 // r is the request object (argument)
 // eslint-disable-next-line
 export function request_matcher_compile<T>(matcher: MethodTrees<T>, state: CompileState<T>): void {
-  state[0].push('const m=r.method;');
+  if (matcher[0] !== null)
+    state[0].push('const m=r.method;');
   method_trees_compile(matcher, state, request_matcher_compile_tree);
 }
 
@@ -51,7 +52,8 @@ export function node_request_matcher_compile_tree<T>(tree: Tree<T>, state: Compi
 // r is the request object (argument)
 // eslint-disable-next-line
 export function node_request_matcher_compile<T>(matcher: MethodTrees<T>, state: CompileState<T>): void {
-  state[0].push('const m=r.method;');
+  if (matcher[0] !== null)
+    state[0].push('const m=r.method;');
   method_trees_compile(matcher, state, node_request_matcher_compile_tree);
 }
 
