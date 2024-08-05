@@ -40,11 +40,11 @@ export function node_slice_part_from<T>(node: Node<T>, idx: number): Node<T> {
 export function node_split_from<T>(node: Node<T>, idx: number) {
   const nextNode = node_slice_part_from(node, idx);
   node_reset(node, node[4].substring(0, idx));
-  node_add_child(node, nextNode);
+  node_add_child_force(node, nextNode);
 }
 
 // eslint-disable-next-line
-export function node_add_child<T>(node: Node<T>, child: Node<T>): void {
+export function node_add_child_force<T>(node: Node<T>, child: Node<T>): void {
   (node[3] ??= {})[child[4].charCodeAt(0)] = child;
 }
 
@@ -86,7 +86,7 @@ export function node_insert<T>(node: Node<T>, path: string, store: T): T {
         if (j < node[4].length) {
           const nextNode = node_slice_part_from(node, j);
           node_reset(node, pathPart);
-          node_add_child(node, nextNode);
+          node_add_child_force(node, nextNode);
         }
 
         break;
@@ -109,7 +109,7 @@ export function node_insert<T>(node: Node<T>, path: string, store: T): T {
 
         // Create and add new node
         const nextNode = node_init<T>(pathPart.substring(j));
-        node_add_child(node, nextNode);
+        node_add_child_force(node, nextNode);
         node = nextNode;
 
         break;
@@ -119,7 +119,7 @@ export function node_insert<T>(node: Node<T>, path: string, store: T): T {
       if (pathPart[j] !== node[4][j]) {
         const nextNode = node_init<T>(pathPart.substring(j));
         node_split_from(node, j);
-        node_add_child(node, nextNode);
+        node_add_child_force(node, nextNode);
 
         node = nextNode;
         break;
@@ -143,7 +143,67 @@ export function node_insert<T>(node: Node<T>, path: string, store: T): T {
 // Node merging
 // eslint-disable-next-line
 export function node_merge<T>(target: Node<T>, source: Node<T>): void {
-  return;
+  if (target[4] === source[4])
+    // Two parts are the same
+    node_merge_properties(target, source);
+  else {
+    const targetPart = target[4];
+    const sourcePart = source[4];
+
+    const targetLen = targetPart.length;
+    const sourceLen = sourcePart.length;
+
+    // Slightly faster branching
+    if (targetLen === sourceLen) {
+      for (let i = 0; i < targetLen; ++i) {
+        // Two parts are different
+        if (targetPart[i] !== sourcePart[i]) {
+          node_split_from(target, i);
+          node_add_child_force(target, node_slice_part_from(source, i));
+          break;
+        }
+      }
+    } else {
+      for (let i = 0; ; ++i) {
+        if (i === targetLen)
+          // Target part ends first
+          node_add_child_safe(target, node_slice_part_from(source, i));
+        if (i === sourceLen) {
+          // Source part ends first
+          const newTargetPart = node_slice_part_from(target, i);
+
+          node_reset(target, targetPart.substring(0, i));
+          node_merge_properties(target, source);
+
+          // Set the newTargetPart as children
+          node_add_child_safe(target, newTargetPart);
+        } else if (targetPart[i] !== sourcePart[i]) {
+          // Two parts are different
+          node_split_from(target, i);
+          node_add_child_force(target, node_slice_part_from(source, i));
+        } else
+          continue;
+
+        break;
+      }
+    }
+  }
+}
+
+// eslint-disable-next-line
+export function node_add_child_safe<T>(parent: Node<T>, child: Node<T>): void {
+  const code = child[4].charCodeAt(0);
+
+  if (parent[3] === null)
+    (parent[3] = {} as Record<number, Node<T>>)[code] = child;
+  else {
+    const children = parent[3];
+
+    if (typeof children[code] === 'undefined')
+      children[code] = child;
+    else
+      node_merge(children[code], child);
+  }
 }
 
 // eslint-disable-next-line
