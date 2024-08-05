@@ -1,6 +1,6 @@
 # Rautor
 
-A small, fast, compile-only URL router.
+A small, fast compiler stack for web frameworks.
 
 ## Patterns
 
@@ -28,7 +28,7 @@ Captured parameters will be stored in an array.
 Example usage:
 
 ```ts
-import Matcher from "@bit-js/rautor/matcher";
+import Matcher from "rautor/matcher";
 
 const matcher = new Matcher<string>();
 
@@ -53,7 +53,7 @@ r2; // null
 Example usage in Node:
 
 ```ts
-import { createRouter } from "@bit-js/rautor/fs";
+import { createRouter } from "rautor/fs";
 import { readdirSync } from "fs";
 
 const route = createRouter({
@@ -109,13 +109,13 @@ import {
   request_matcher_register_all,
   request_matcher_compile
   type RequestMatcher,
-} from "@bit-js/rautor/request-matcher";
+} from "rautor/request-matcher";
 
 import {
   compile_state_init,
   compile_state_result,
   type CompileCallback
-} from "@bit-js/rautor/compiler";
+} from "rautor/compiler";
 ```
 
 Let's define our handler type and the compile callback function to inline our handler:

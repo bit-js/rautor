@@ -140,6 +140,57 @@ export function node_insert<T>(node: Node<T>, path: string, store: T): T {
     return node[0] ??= store;
 }
 
+// Node merging
+// eslint-disable-next-line
+export function node_merge<T>(target: Node<T>, source: Node<T>): void {
+  return;
+}
+
+// eslint-disable-next-line
+export function node_merge_properties<T>(target: Node<T>, source: Node<T>): void {
+  // Overwrite store
+  if (source[0] !== null) target[0] = source[0];
+
+  // Merge static children
+  if (source[3] !== null) {
+    if (target[3] === null) target[3] = source[3];
+    else {
+      const targetChildren = target[3];
+      const sourceChildren = source[3];
+
+      for (const id in sourceChildren) {
+        if (typeof targetChildren[id] === 'undefined')
+          targetChildren[id] = sourceChildren[id];
+        else
+          node_merge(targetChildren[id], sourceChildren[id]);
+      }
+    }
+  }
+
+  // Merge parameters
+  if (source[2] !== null) {
+    if (target[2] === null) target[2] = source[2];
+    else {
+      const targetParam = target[2];
+      const sourceParam = source[2];
+
+      // Overwrite store
+      if (sourceParam[0] !== null) targetParam[0] = sourceParam[0];
+
+      // Check children
+      if (sourceParam[1] !== null) {
+        if (targetParam[1] === null)
+          targetParam[1] = sourceParam[1];
+        else
+          node_merge(targetParam[1], sourceParam[1]);
+      }
+    }
+  }
+
+  // Merge wildcard
+  if (source[1] !== null) source[0] = source[1];
+}
+
 // p is the path (argument)
 // a is the params
 // l is the path length
