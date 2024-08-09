@@ -34,15 +34,14 @@ export function isEmail(str: string): boolean {
   // String cannot be empty
   if (strLen === 0) return false;
 
-  let code = str.charCodeAt(0);
   // First char must be valid
-  if (firstPartCharset[code] !== null) return false;
+  if (firstPartCharset[str.charCodeAt(0)] !== null) return false;
 
   const aIdx = str.indexOf('@', 1);
   // No @ found
   if (aIdx === -1) {
     for (let i = 1; i < strLen; ++i) {
-      if (firstPartCharset[code] !== null)
+      if (firstPartCharset[str.charCodeAt(i)] !== null)
         return false;
     }
 
@@ -52,7 +51,7 @@ export function isEmail(str: string): boolean {
   // Need to check the first part
   let i = 1;
   while (i < aIdx) {
-    if (firstPartCharset[code] !== null)
+    if (firstPartCharset[str.charCodeAt(i)] !== null)
       return false;
 
     ++i;
@@ -64,9 +63,11 @@ export function isEmail(str: string): boolean {
   if (i === strLen || domainFirstCharset[str.charCodeAt(i)] !== null) return false;
 
   i++;
+
   // Search for domain dots
   let dotIdx = str.indexOf('.', i);
-  let matchCount = 0;
+  let matchCount: number;
+  let code: number;
 
   // Continously iterating i to the dot position
   while (dotIdx !== -1) {
