@@ -5,8 +5,7 @@ import { defaultNotFound } from './utils/constants';
 
 // eslint-disable-next-line
 const compileCallback: CompileCallback<any> = (item, state, hasParam): void => {
-  if (item instanceof Response)
-    state[0].push(`return ${state[2](item)}.clone();`);
+
 };
 
 export class App {

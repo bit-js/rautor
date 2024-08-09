@@ -163,7 +163,7 @@ export function jtd_json_assert_compile_conditions(schema: JTDSchema, paramName:
     } else if (key === 'enum') {
       // Inject a key map to quickly check the values
       const keyMap: Record<string, null> = {};
-      for (let i = 0, arr = (schema as JTDEnumSchema).enum, l = arr.length; i < l; ++i) keyMap[arr[i]] = null;
+      for (let i = 0, arr = (schema as JTDEnumSchema).enum, l = arr.length; i < l; i++) keyMap[arr[i]] = null;
       const keyMapId = state[1](keyMap);
 
       if (isNullable) builder.push(`(${paramName}===null||`);
