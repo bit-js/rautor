@@ -30,7 +30,7 @@ const domainNextCharset: Charset = domainFirstCharset.with(45, null);
 // This implementation is based on the regular expression provided on the spec page:
 // /^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
 // Basically this is the equivalent behavior of `<input type='email'>`
-export default function isEmail(str: string): boolean {
+export function isEmail(str: string): boolean {
   const strLen = str.length;
   // String cannot be empty and first char must be valid
   if (strLen === 0 || firstPartCharset[str.charCodeAt(0)] !== null) return false;

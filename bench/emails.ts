@@ -1,5 +1,5 @@
 import { group, run, bench } from 'mitata';
-import isEmail from '../src/jtd/validators/email';
+import { isEmail } from '../src/validators';
 import { emails } from '../datasets/emails';
 
 for (let i = 0; i < 10; i++) bench('noop', () => { });
