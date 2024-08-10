@@ -1,6 +1,6 @@
 import Matcher from '../src/matcher';
 import { test, expect } from 'bun:test';
-import { generatePath, paths, pathsCount } from './paths';
+import { generatePath, paths, pathsCount } from '../datasets/paths';
 
 const matcher = new Matcher<number>();
 for (let i = 0; i < pathsCount; ++i) matcher.on(paths[i], i);

@@ -29,129 +29,80 @@ const domainNextCharset: Charset = domainFirstCharset.with(45, null);
 // See https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address for more info
 // This implementation is based on the regular expression provided on the spec page:
 // /^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
-export function isEmail(str: string): boolean {
+// Basically this is the equivalent behavior of `<input type='email'>`
+export default function isEmail(str: string): boolean {
   const strLen = str.length;
-  // String cannot be empty
-  if (strLen === 0) return false;
-
-  // First char must be valid
-  if (firstPartCharset[str.charCodeAt(0)] !== null) return false;
-
-  const aIdx = str.indexOf('@', 1);
-  // No @ found
-  if (aIdx === -1) {
-    for (let i = 1; i < strLen; ++i) {
-      if (firstPartCharset[str.charCodeAt(i)] !== null)
-        return false;
-    }
-
-    return true;
-  }
+  // String cannot be empty and first char must be valid
+  if (strLen === 0 || firstPartCharset[str.charCodeAt(0)] !== null) return false;
 
   // Need to check the first part
-  let i = 1;
-  while (i < aIdx) {
-    if (firstPartCharset[str.charCodeAt(i)] !== null)
-      return false;
+  for (let i = 1; i < strLen; i++) {
+    const curCode = str.charCodeAt(i);
 
-    ++i;
-  }
+    // Reach @
+    if (curCode === 64) {
+      // First char after @ must be a char in domainFirstCharset
+      const lastStringIdx = strLen - 1;
+      if (i === lastStringIdx || domainFirstCharset[str.charCodeAt(i + 1)] !== null) return false;
 
-  // Jump to after aIdx
-  i = aIdx + 1;
-  // First char after @ must be a char in domainFirstCharset
-  if (i === strLen || domainFirstCharset[str.charCodeAt(i)] !== null) return false;
+      // Skip to after @
+      i += 2;
+      if (i === strLen) return true;
 
-  i++;
+      for (let matchCount = 1; ;) {
+        const code = str.charCodeAt(i);
 
-  // Search for domain dots
-  let dotIdx = str.indexOf('.', i);
-  let matchCount: number;
-  let code: number;
+        // Meet a dot
+        if (code === 46) {
+          // Dot must not ends the string
+          // The first character after the dot must be valid
+          // The character before the dot must not be -
+          if (i === lastStringIdx || str.charCodeAt(i - 1) === 45 || domainFirstCharset[str.charCodeAt(i + 1)] !== null) return false;
 
-  // Continously iterating i to the dot position
-  while (dotIdx !== -1) {
-    // Dot cannot be at the end of the string
-    if (dotIdx === strLen - 1)
-      return false;
+          // Jump to the part after dot
+          i += 2;
+          if (i === strLen) return true;
+          matchCount = 1;
 
-    // Skip this if i already reached dotIdx
-    if (dotIdx !== i) {
-      // Must reset this lol
-      matchCount = 0;
+          continue;
+        }
 
-      while (true) {
-        code = str.charCodeAt(i);
+        // Char cannot match domainFirstCharset if it
+        // does not match domainNextCharset
+        if (domainNextCharset[code] !== null) return false;
 
-        if (domainNextCharset[code] === null) {
-          // Cannot match more than 61 times
-          if (matchCount === 61) {
-            // Must only match domainFirstCharset so
-            // only check whether current char is not -
-            // Must be the end of the part as well
-            if (code === 45 || i !== dotIdx - 1) return false;
+        // domainNextCharset cannot match more than 61 times
+        if (matchCount === 61) {
+          // Must not include - as last match
+          if (code === 45) return false;
 
-            // Move to the index after dot
-            i += 2;
-            break;
-          }
+          // End of string is valid
+          if (i === lastStringIdx) return true;
 
-          i++;
-          if (i === dotIdx) {
-            // The end must only match domainFirstCharset so
-            // only check whether current char is not -
-            if (code === 45) return false;
+          // Must be followed by a dot
+          // Dot must not ends the string
+          // The first character after the dot must be valid
+          if (str.charCodeAt(i + 1) !== 46 || i + 1 === lastStringIdx || domainFirstCharset[str.charCodeAt(i + 2)] !== null) return false;
 
-            // Skip the dot
-            i++;
-            break;
-          }
+          // Jump to the part after dot
+          i += 3;
+          if (i === strLen) return true;
+          matchCount = 1;
 
+          continue;
+        } else if (i === lastStringIdx)
+          // Domain must not end with -
+          return code !== 45;
+        else {
           matchCount++;
-        } else
-          // Char cannot match domainFirstCharset if it
-          // does not match domainNextCharset
-          return false;
+          i++;
+        }
       }
     }
 
-    // Redo the first char check for the next part
-    // We don't need a length check here
-    if (domainFirstCharset[str.charCodeAt(i)] !== null) return false;
-
-    // Skip to the index after the checked char
-    i++;
-    dotIdx = str.indexOf('.', i);
-  }
-
-  // This happens when the first char check has already succeeded
-  if (i === strLen) return true;
-
-  // Check the part after last dot
-  matchCount = 0;
-
-  while (true) {
-    code = str.charCodeAt(i);
-
-    if (domainNextCharset[code] === null) {
-      // Cannot match more than 61 times
-      if (matchCount === 61)
-        // Must only match domainFirstCharset so
-        // only check whether current char is not -
-        // Must be the end of the part as well
-        return code !== 45 && i === strLen - 1;
-
-      i++;
-
-      // The end must only match domainFirstCharset so
-      // only check whether current char is not -
-      if (i === strLen)
-        return code !== 45;
-
-      matchCount++;
-    } else
-      // Char cannot match domainFirstCharset if it
-      // does not match domainNextCharset
+    if (firstPartCharset[curCode] !== null)
       return false;
   }
+
+  return false;
 }
