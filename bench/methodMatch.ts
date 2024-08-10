@@ -1,5 +1,7 @@
 import { group, bench, run } from 'mitata';
 
+for (let i = 0; i < 10; i++) bench('noop', () => { });
+
 const methods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
 
 const methodMap = {}, idMap = {};
