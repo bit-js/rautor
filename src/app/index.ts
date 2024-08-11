@@ -1,12 +1,7 @@
-import { compile_state_decls, compile_state_init, compile_state_result, type CompileCallback } from '../compiler';
+import { compile_state_decls, compile_state_init, compile_state_result } from '../compiler';
 import { method_trees_init, type MethodTrees } from '../method-trees';
 import { request_matcher_compile } from '../request-matcher';
 import { defaultNotFound } from './utils/constants';
-
-// eslint-disable-next-line
-const compileCallback: CompileCallback<any> = (item, state, hasParam): void => {
-
-};
 
 export class App {
   public readonly trees: MethodTrees<any>;
@@ -19,7 +14,9 @@ export class App {
     const keys: string[] = [];
     const values: any[] = [];
 
-    const state = compile_state_init(compileCallback, keys, values);
+    const state = compile_state_init((_item, _state, _isParam) => {
+      // TODO
+    }, keys, values);
     const builder = state[0];
 
     request_matcher_compile(this.trees, state);
