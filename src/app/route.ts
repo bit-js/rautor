@@ -11,9 +11,10 @@ export interface FormattedRoute<State extends GenericState, Schemas extends Reco
   fn: (ctx: Context & State) => Schemas extends RootJTDSchema
     ? InferRootJTDSchema<Schemas>
     : Schemas extends Record<number, RootJTDSchema>
-      ? { [K in Extract<keyof Schemas, number>]: InferRootJTDSchema<Schemas[K]> }[Extract<keyof Schemas, number>]
-      : unknown;
+    ? { [K in Extract<keyof Schemas, number>]: InferRootJTDSchema<Schemas[K]> }[Extract<keyof Schemas, number>]
+    : unknown;
 }
 
 export type Route<State extends GenericState> = PlainRoute<State> | FormattedRoute<State, any> | Response;
+export type GenericRoute = Route<GenericState>;
 

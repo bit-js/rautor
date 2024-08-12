@@ -5,7 +5,7 @@ export type GenericError = StaticError | ErrorPayload<unknown>;
 let currentErrorId = 0;
 export const errorSymbol: [] = [];
 
-class ErrorType<Payload> {
+export class DynamicError<Payload> {
   public readonly id: number;
 
   public constructor() {
@@ -27,8 +27,8 @@ export function staticError(): StaticError {
 /**
  * Create an error type with payload
  */
-export function dynamicError<Payload>(): ErrorType<Payload> {
-  return new ErrorType();
+export function dynamicError<Payload>(): DynamicError<Payload> {
+  return new DynamicError();
 }
 
 /**

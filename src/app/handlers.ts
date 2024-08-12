@@ -1,15 +1,28 @@
 import type { CompileState } from '../compiler';
+import type { DynamicError, GenericError, StaticError } from '../error';
 import type { Context } from './types/context';
 
 export type GenericState = Record<string, any>;
 
-export type Injector = [0, (state: CompileState<any>) => void];
-export type Middleware<State extends GenericState> = [1, (ctx: Context & State) => unknown];
-export type NoExceptMiddleware<State extends GenericState> = [2, Middleware<State>[1]];
-export type Setter<State extends GenericState> = [3, Middleware<State>[1]];
-export type NoExceptSetter<State extends GenericState> = [4, Setter<State>[1]];
+export type Handler<State extends GenericState> = (ctx: Context & State) => unknown;
+export type SpecialHandler<FirstArg, State extends GenericState> = (x: FirstArg, ctx: Context & State) => unknown;
+export type GenericHandler = Handler<GenericState>;
 
-export type GenericHandler = Injector
+// Store route handlers data
+export type Injector = [0, (state: CompileState<any>) => void];
+export type Middleware<State extends GenericState> = [1, Handler<State>];
+export type NoExceptMiddleware<State extends GenericState> = [2, Handler<State>];
+export type Setter<State extends GenericState> = [3, Handler<State>];
+export type NoExceptSetter<State extends GenericState> = [4, Handler<State>];
+
+export type GenericHandlerData = Injector
   | Middleware<GenericState> | NoExceptMiddleware<GenericState>
   | Setter<GenericState> | NoExceptSetter<GenericState>;
 
+// Error handler
+export type ErrorHandler<ErrorType extends GenericError, State extends GenericState> =
+  ErrorType extends StaticError
+  ? Handler<State>
+  : ErrorType extends DynamicError<infer Payload>
+  ? SpecialHandler<Payload, State>
+  : unknown;

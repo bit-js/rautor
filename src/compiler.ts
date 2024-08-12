@@ -11,20 +11,30 @@ export type CompileState<T> = [
 ];
 
 // eslint-disable-next-line
-export function compile_state_init<T>(cb: CompileCallback<T>, keys: string[], values: any[]): CompileState<T> {
+export function compile_state_init_with_add_value_cb<T>(cb: CompileCallback<T>, addValue: AddValueCallback): CompileState<T> {
   return [
     [],
     cb,
-    (val: any) => {
-      // eslint-disable-next-line
-      const id = 'f' + keys.length;
-      keys.push(id);
-      values.push(val);
-      return id;
-    },
+    addValue,
     [],
     0
   ];
+}
+
+// eslint-disable-next-line
+export function compile_state_create_add_value_cb(keys: string[], values: any[]): AddValueCallback {
+  return (val: any) => {
+    // eslint-disable-next-line
+    const id = 'f' + keys.length;
+    keys.push(id);
+    values.push(val);
+    return id;
+  };
+}
+
+// eslint-disable-next-line
+export function compile_state_init<T>(cb: CompileCallback<T>, keys: string[], values: any[]): CompileState<T> {
+  return compile_state_init_with_add_value_cb(cb, compile_state_create_add_value_cb(keys, values));
 }
 
 // eslint-disable-next-line
