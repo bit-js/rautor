@@ -1,20 +1,26 @@
 import type { InferRootJTDSchema, RootJTDSchema } from '../jtd/types';
-import type { GenericState } from './handlers';
+import type { GenericState, HandlerGroupData } from './handlers';
 import type { Context } from './types/context';
 
 // Route types
-export type PlainRoute<State extends GenericState> = (ctx: Context & State) => ConstructorParameters<typeof Response>[0];
+export type PlainRoute<State extends GenericState, Args extends any[]> = (...args: [...Args, Context & State]) => ConstructorParameters<typeof Response>[0];
 
-export interface FormattedRoute<State extends GenericState, Schemas extends Record<number, RootJTDSchema> | RootJTDSchema | undefined = undefined> {
-  response: 'json' | 'raw';
+export interface FormattedRoute<State extends GenericState, Args extends any[], Schemas extends Record<number, RootJTDSchema> | RootJTDSchema | undefined = undefined> {
+  type: 'json';
   schema?: Schemas;
-  fn: (ctx: Context & State) => Schemas extends RootJTDSchema
+  fn: (...args: [...Args, Context & State]) => Schemas extends RootJTDSchema
     ? InferRootJTDSchema<Schemas>
-    : Schemas extends Record<number, RootJTDSchema>
-    ? { [K in Extract<keyof Schemas, number>]: InferRootJTDSchema<Schemas[K]> }[Extract<keyof Schemas, number>]
-    : unknown;
+    : Schemas extends Record<number, RootJTDSchema> ? { [K in Extract<keyof Schemas, number>]: InferRootJTDSchema<Schemas[K]> }[Extract<keyof Schemas, number>] : unknown;
 }
 
-export type Route<State extends GenericState> = PlainRoute<State> | FormattedRoute<State, any> | Response;
-export type GenericRoute = Route<GenericState>;
+export interface StaticRoute {
+  type: 'static';
+  body: any;
+  options?: Context;
+}
+
+export type Route<State extends GenericState, Args extends any[]> = PlainRoute<State, Args> | FormattedRoute<State, Args, any> | StaticRoute;
+
+export type GenericRoute = Route<GenericState, []>;
+export type RouteData = [handlers: HandlerGroupData[], route: GenericRoute];
 

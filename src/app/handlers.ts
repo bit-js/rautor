@@ -1,5 +1,4 @@
 import type { CompileState } from '../compiler';
-import type { DynamicError, GenericError, StaticError } from '../error';
 import type { Context } from './types/context';
 
 export type GenericState = Record<string, any>;
@@ -19,10 +18,4 @@ export type GenericHandlerData = Injector
   | Middleware<GenericState> | NoExceptMiddleware<GenericState>
   | Setter<GenericState> | NoExceptSetter<GenericState>;
 
-// Error handler
-export type ErrorHandler<ErrorType extends GenericError, State extends GenericState> =
-  ErrorType extends StaticError
-  ? Handler<State>
-  : ErrorType extends DynamicError<infer Payload>
-  ? SpecialHandler<Payload, State>
-  : unknown;
+export type HandlerGroupData = GenericHandlerData[];

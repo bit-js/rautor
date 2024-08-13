@@ -5,7 +5,7 @@ import { exec } from './utils';
 const outdir = './lib';
 if (existsSync(outdir)) rmSync(outdir, { recursive: true });
 
-exec`bun x tsc`;
+exec`bun x tsc --extendedDiagnostics`;
 
 const transpiler = new Bun.Transpiler({
   loader: 'tsx',

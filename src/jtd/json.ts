@@ -1,16 +1,16 @@
-import { compile_state_init, type AddValueCallback, type CompileState } from '../compiler';
+import { compile_state_init, type CompileState } from '../compiler';
 import { chainProperty } from '../utils/identifier';
-import type { InferRootJTDSchema, JTDElementsSchema, JTDEnumSchema, JTDPropertiesSchema, JTDRef, JTDSchema, JTDTypeSchema, JTDValuesSchema, RootJTDSchema } from './types';
+import type { InferRootJTDSchema, JTDDiscriminatorSchema, JTDElementsSchema, JTDEnumSchema, JTDPropertiesSchema, JTDRef, JTDSchema, JTDTypeSchema, JTDValuesSchema, RootJTDSchema } from './types';
 
 export type JTDCompileRefsMap = Record<string, number> | null;
-export type JTDCompileState = [builder: string[], addValue: AddValueCallback, refs: JTDCompileRefsMap];
+export type JTDCompileState = [builder: string[], refs: JTDCompileRefsMap];
 
 // eslint-disable-next-line
 export function jtd_json_assert_compile(schema: RootJTDSchema, paramName: string, state: CompileState<any>): void {
   if (typeof schema.definitions === 'undefined') {
     const builder = state[0];
     const prevBuilderLength = builder.length;
-    jtd_json_assert_compile_conditions(schema, paramName, [builder, state[2], null]);
+    jtd_json_assert_compile_conditions(schema, paramName, [builder, null], false);
     if (prevBuilderLength === builder.length)
       builder.push('true');
   } else {
@@ -25,13 +25,13 @@ export function jtd_json_assert_compile(schema: RootJTDSchema, paramName: string
 
     // Actually build the declarations
     const declsBuilder = state[3];
-    const compileState: JTDCompileState = [declsBuilder, state[2], refs];
+    const compileState: JTDCompileState = [declsBuilder, refs];
 
     for (const key in defs) {
       declsBuilder.push(`const d${refs[key]}=(o)=>`);
 
       const prevBuilderLength = declsBuilder.length;
-      jtd_json_assert_compile_conditions(defs[key], 'o', compileState);
+      jtd_json_assert_compile_conditions(defs[key], 'o', compileState, false);
       if (prevBuilderLength === declsBuilder.length)
         declsBuilder.push('true');
 
@@ -41,14 +41,14 @@ export function jtd_json_assert_compile(schema: RootJTDSchema, paramName: string
     // Change target builder
     const builder = compileState[0] = state[0];
     const prevBuilderLength = builder.length;
-    jtd_json_assert_compile_conditions(schema, paramName, compileState);
+    jtd_json_assert_compile_conditions(schema, paramName, compileState, false);
     if (prevBuilderLength === builder.length)
       declsBuilder.push('true');
   }
 }
 
 // eslint-disable-next-line
-export function jtd_json_assert_compile_conditions(schema: JTDSchema, paramName: string, state: JTDCompileState): void {
+export function jtd_json_assert_compile_conditions(schema: JTDSchema, paramName: string, state: JTDCompileState, ignoreObjectCheck: boolean): void {
   const builder = state[0];
   const isNullable = schema.nullable === true;
 
@@ -56,7 +56,7 @@ export function jtd_json_assert_compile_conditions(schema: JTDSchema, paramName:
 
   for (const key in schema) {
     if (key === 'properties') {
-      if (!hasObjectCondition) {
+      if (!hasObjectCondition && !ignoreObjectCheck) {
         builder.push(isNullable ? `(${paramName}===null||typeof ${paramName}==='object'` : `typeof ${paramName}==='object'&&${paramName}!==null`);
         hasObjectCondition = true;
       }
@@ -67,13 +67,13 @@ export function jtd_json_assert_compile_conditions(schema: JTDSchema, paramName:
         builder.push('&&');
 
         const builderPrevLen = builder.length;
-        jtd_json_assert_compile_conditions(props[propKey], chainProperty(paramName, propKey), state);
+        jtd_json_assert_compile_conditions(props[propKey], chainProperty(paramName, propKey), state, false);
         // Handle any schema
         if (builder.length === builderPrevLen)
           builder.push(`${JSON.stringify(propKey)} in ${paramName}`);
       }
     } else if (key === 'optionalProperties') {
-      if (!hasObjectCondition) {
+      if (!hasObjectCondition && !ignoreObjectCheck) {
         builder.push(isNullable ? `(${paramName}===null||typeof ${paramName}==='object'` : `typeof ${paramName}==='object'&&${paramName}!==null`);
         hasObjectCondition = true;
       }
@@ -84,13 +84,13 @@ export function jtd_json_assert_compile_conditions(schema: JTDSchema, paramName:
         builder.push(`&&(!(${JSON.stringify(propKey)} in ${paramName})||`);
 
         const builderPrevLen = builder.length;
-        jtd_json_assert_compile_conditions(props[propKey], chainProperty(paramName, propKey), state);
+        jtd_json_assert_compile_conditions(props[propKey], chainProperty(paramName, propKey), state, false);
         // Handle any schema
         builder.push(builder.length === builderPrevLen ? 'true)' : ')');
       }
     } else if (key === 'additionalProperties') {
       if ((schema as JTDPropertiesSchema).additionalProperties === false) {
-        if (!hasObjectCondition) {
+        if (!hasObjectCondition && !ignoreObjectCheck) {
           builder.push(isNullable ? `(${paramName}===null||typeof ${paramName}==='object'` : `typeof ${paramName}==='object'&&${paramName}!==null`);
           hasObjectCondition = true;
         }
@@ -99,14 +99,43 @@ export function jtd_json_assert_compile_conditions(schema: JTDSchema, paramName:
           // eslint-disable-next-line
           builder.push(`&&Object.keys(${paramName}).length===${typeof (schema as JTDPropertiesSchema).properties === 'undefined' ? 0 : Object.keys((schema as JTDPropertiesSchema).properties!).length}`);
         else {
-          const obj: Dict<null> = {};
-          for (const propKey in (schema as JTDPropertiesSchema).optionalProperties) obj[propKey] = null;
-          if (typeof (schema as JTDPropertiesSchema).properties !== 'undefined')
-            for (const propKey in (schema as JTDPropertiesSchema).properties) obj[propKey] = null;
-
-          builder.push(`&&Object.keys(${paramName}).every(${state[1]((propKey: string) => obj[propKey] === null)})`);
+          builder.push(`&&Object.keys(${paramName}).every((o)=>${
+            // eslint-disable-next-line
+            Object.keys((schema as JTDPropertiesSchema).optionalProperties!).map((item) => `o===${JSON.stringify(item)}`).join('||')
+            }${typeof (schema as JTDPropertiesSchema).properties !== 'undefined'
+              ? ''
+              // eslint-disable-next-line
+              : Object.keys((schema as JTDPropertiesSchema).properties!).map((item) => `||o===${JSON.stringify(item)}`).join('')
+            })`);
         }
       }
+    } else if (key === 'discriminator') {
+      if (isNullable) builder.push(`(${paramName}===null||typeof ${paramName}==='object'&&`);
+      else builder.push(`typeof ${paramName}==='object'&&${paramName}!==null&&`);
+
+      const discriminatorProp = chainProperty(paramName, (schema as JTDDiscriminatorSchema).discriminator);
+
+      const discriminatorMapEntries = Object.entries((schema as JTDDiscriminatorSchema).mapping);
+      const lastIdx = discriminatorMapEntries.length - 1;
+
+      for (let i = 0; i < lastIdx; ++i) {
+        const entry = discriminatorMapEntries[i];
+        builder.push(`${discriminatorProp}===${JSON.stringify(entry[0])}?`);
+
+        const builderPrevLen = builder.length;
+        jtd_json_assert_compile_conditions(entry[1], paramName, state, true);
+        builder.push(builder.length === builderPrevLen ? 'true:' : ':');
+      }
+
+      const lastEntry = discriminatorMapEntries[lastIdx];
+      builder.push(`${discriminatorProp}===${JSON.stringify(lastEntry[0])}&&`);
+
+      const builderPrevLen = builder.length;
+      jtd_json_assert_compile_conditions(lastEntry[1], paramName, state, true);
+      if (builder.length === builderPrevLen)
+        builder.push('true');
+
+      if (isNullable) builder.push(')');
     } else if (key === 'type') {
       if (isNullable) builder.push(`(${paramName}===null||`);
 
@@ -139,8 +168,8 @@ export function jtd_json_assert_compile_conditions(schema: JTDSchema, paramName:
       return;
     } else if (key === 'ref') {
       // Call the assert function if it exists, else ignore everything
-      if (state[2] !== null) {
-        const id = state[2][(schema as JTDRef).ref];
+      if (state[1] !== null) {
+        const id = state[1][(schema as JTDRef).ref];
         if (typeof id === 'number')
           builder.push(schema.nullable === true ? `(${paramName}===null||d${id}(${paramName}))` : `d${id}(${paramName})`);
       }
@@ -152,7 +181,7 @@ export function jtd_json_assert_compile_conditions(schema: JTDSchema, paramName:
       builder.push(`Array.isArray(${paramName})&&${paramName}.every((o)=>`);
 
       const prevBuilderLength = builder.length;
-      jtd_json_assert_compile_conditions((schema as JTDElementsSchema).elements, 'o', state);
+      jtd_json_assert_compile_conditions((schema as JTDElementsSchema).elements, 'o', state, false);
       if (prevBuilderLength === builder.length)
         builder.push('true');
 
@@ -161,22 +190,15 @@ export function jtd_json_assert_compile_conditions(schema: JTDSchema, paramName:
       if (isNullable) builder.push(')');
       return;
     } else if (key === 'enum') {
-      // Inject a key map to quickly check the values
-      const keyMap: Record<string, null> = {};
-      for (let i = 0, arr = (schema as JTDEnumSchema).enum, l = arr.length; i < l; i++) keyMap[arr[i]] = null;
-      const keyMapId = state[1](keyMap);
-
       if (isNullable) builder.push(`(${paramName}===null||`);
-
-      builder.push(`${keyMapId}[${paramName}]===null`);
-
+      builder.push((schema as JTDEnumSchema).enum.map((item) => `${paramName}===${JSON.stringify(item)}`).join('||'));
       if (isNullable) builder.push(')');
       return;
     } else if (key === 'values') {
       if (isNullable) builder.push(`(${paramName}===null||`);
 
       builder.push(`typeof ${paramName}==='object'&&${paramName}!==null&&Object.values(${paramName}).every((o)=>`);
-      jtd_json_assert_compile_conditions((schema as JTDValuesSchema).values, 'o', state);
+      jtd_json_assert_compile_conditions((schema as JTDValuesSchema).values, 'o', state, false);
       builder.push(')');
 
       if (isNullable) builder.push(')');
