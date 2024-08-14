@@ -15,7 +15,7 @@ export interface FormattedRoute<State extends GenericState, Args extends any[], 
 
 export interface StaticRoute {
   type: 'static';
-  body: any;
+  body?: any;
   options?: Context;
 }
 

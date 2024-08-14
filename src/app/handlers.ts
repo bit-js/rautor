@@ -11,8 +11,8 @@ export type GenericHandler = Handler<GenericState>;
 export type Injector = [0, (state: CompileState<any>) => void];
 export type Middleware<State extends GenericState> = [1, Handler<State>];
 export type NoExceptMiddleware<State extends GenericState> = [2, Handler<State>];
-export type Setter<State extends GenericState> = [3, Handler<State>];
-export type NoExceptSetter<State extends GenericState> = [4, Handler<State>];
+export type Setter<State extends GenericState> = [3, Handler<State>, name: string];
+export type NoExceptSetter<State extends GenericState> = [4, Handler<State>, name: string];
 
 export type GenericHandlerData = Injector
   | Middleware<GenericState> | NoExceptMiddleware<GenericState>
