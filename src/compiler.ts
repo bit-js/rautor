@@ -38,6 +38,16 @@ export function compile_state_init<T>(cb: CompileCallback<T>, keys: string[], va
 }
 
 // eslint-disable-next-line
+export function compile_state_derive<T>(state: CompileState<T>): CompileState<T> {
+  return [[] as string[], state[1], state[2], state[3], state[4]];
+}
+
+// eslint-disable-next-line
+export function compile_state_sync<T>(target: CompileState<T>, source: CompileState<T>): void {
+  target[4] = source[4];
+}
+
+// eslint-disable-next-line
 export function compile_state_result<T>(state: CompileState<T>): string {
   return state[0].join('');
 }

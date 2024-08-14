@@ -1,124 +1,42 @@
-import { compile_state_init, compile_state_decls, compile_state_result, type CompileState, compile_state_init_with_add_value_cb } from '../compiler';
-import { method_trees_init, type MethodTrees } from '../method-trees';
+import { compile_state_init, compile_state_decls, compile_state_result } from '../compiler';
+import { method_trees_init, method_trees_register, type MethodTrees } from '../method-trees';
 import { request_matcher_compile } from '../request-matcher';
-import { chainProperty } from '../utils/identifier';
 
-import type { GenericState, HandlerGroupData } from './handlers';
-import type { RouteData } from './route';
-import { isAsync } from './utils/constants';
-import serializeValue from './utils/serializeValue';
+import type { GenericState, HandlerGroupData, Injector, Setter } from './handlers';
+import { compileRoute, type Route, type RouteData } from './route';
+import type { MethodProto } from './utils/methods';
 
-type AppCompileState = [...CompileState<RouteData>, compiledGroups: WeakMap<HandlerGroupData, [requireAsync: boolean, result: string]>, handlerIdx: number];
-
-function compileRoute(item: RouteData, state: CompileState<RouteData>, isParam: boolean): void {
-  let isHandlerAsync = false;
-
-  const builder = state[0];
-  const addValue = state[2];
-  builder.push(`const c={status:200,headers:[]${isParam ? ',params:a' : ''}};`);
-
-  // Compile and cache handler groups
-  const handlerGroups = item[0];
-  // @ts-expect-error Compiler hack
-  const compiledGroups = (state as AppCompileState)[5];
-
-  for (let i = handlerGroups.length - 1; i > -1; i--) {
-    const handlers = handlerGroups[i];
-    const compileResult = compiledGroups.get(handlers);
-
-    if (typeof compileResult === 'undefined') {
-      // Compile all handlers
-      let isGroupAsync = false;
-
-      // Create an independent compile state for a group
-      // @ts-expect-error Disable compile callback for sub-state
-      const groupCompileState = compile_state_init_with_add_value_cb(null, addValue);
-      const groupResultBuilder = groupCompileState[0];
-
-      for (let j = 0, len = handlers.length; j < len; j++) {
-        const handlerData = handlers[i];
-        const handlerType = handlerData[0];
-        const handler = handlerData[1];
-
-        if (handlerType === 0)
-          handler(groupCompileState);
-        else {
-          // Check if the current handler is an async function
-          const isCurrentHandlerAsync = isAsync(handler);
-          if (isCurrentHandlerAsync) {
-            isGroupAsync = true;
-
-            if (!isHandlerAsync) {
-              // Wrap the code with an async scope
-              builder.push('return (async ()=>{');
-              isHandlerAsync = true;
-            }
-          }
-
-          isGroupAsync ||= isCurrentHandlerAsync;
-
-          // @ts-expect-error Compiler hack to track result id
-          const curId = (state as AppCompileState)[6];
-
-          if (handlerType === 1)
-            groupResultBuilder.push(`const x${curId}=${isCurrentHandlerAsync ? 'await ' : ''}${addValue(handler)}(${handler.length === 0 ? '' : 'c'});if(x${curId} instanceof Response)return x${curId};`);
-          else if (handlerType === 2)
-            groupResultBuilder.push(`${isCurrentHandlerAsync ? 'await ' : ''}${addValue(handler)}(${handler.length === 0 ? '' : 'c'});`);
-          else if (handlerType === 3)
-            groupResultBuilder.push(`const x${curId}=${isCurrentHandlerAsync ? 'await ' : ''}${addValue(handler)}(${handler.length === 0 ? '' : 'c'});if(x${curId} instanceof Response)return x${curId};${chainProperty('c', handlerData[2])}=x${curId};`);
-          else
-            groupResultBuilder.push(`${chainProperty('c', handlerData[2])}=${isCurrentHandlerAsync ? 'await ' : ''}${addValue(handler)}(${handler.length === 0 ? '' : 'c'});`);
-
-          // @ts-expect-error Compiler hack
-          (state as AppCompileState)[6]++;
-        }
-      }
-
-      const groupResult = groupResultBuilder.join('');
-
-      // Push to current string builder and cache the result
-      builder.push(groupResult);
-      compiledGroups.set(handlers, [isGroupAsync, groupResult]);
-    } else {
-      if (compileResult[0] && !isHandlerAsync) {
-        // Wrap the code with an async scope
-        builder.push('return (async ()=>{');
-        isHandlerAsync = true;
-      }
-
-      builder.push(compileResult[1]);
-    }
-  }
-
-  // Compile route handler
-  const routeHandler = item[1];
-  if (typeof routeHandler === 'function') {
-    builder.push(isAsync(routeHandler)
-      ? `return ${addValue(routeHandler)}(${routeHandler.length === 0 ? '' : 'c'}).then((o)=>new Response(o,c));`
-      : `return new Response( ${addValue(routeHandler)}(${routeHandler.length === 0 ? '' : 'c'}),c);`);
-  } else {
-    // Special route type
-    const routeType = routeHandler.type;
-
-    if (routeType === 'static') {
-      // @ts-expect-error Options
-      // eslint-disable-next-line
-      const res = new Response(serializeValue(routeHandler.body), routeHandler.options);
-      builder.push(`return ${addValue(res)}${res.body === null ? '' : '.clone()'};`);
-    }
-
-    // TODO: JSON
-  }
-
-  // Close the async scope
-  if (isHandlerAsync) builder.push('})();');
-}
-
-export class App<State extends GenericState> {
+export class App<State extends GenericState> implements MethodProto {
   public readonly trees: MethodTrees<RouteData>;
+  public readonly handlers: HandlerGroupData;
 
   public constructor() {
     this.trees = method_trees_init();
+    this.handlers = [];
+  }
+
+  /**
+   * Inject code to the handle process
+   */
+  public inject(fn: Injector[1], options?: { requireContext?: boolean, requireAsync?: boolean }): this {
+    this.handlers.push(typeof options === 'undefined' ? [0, fn, false, false] : [0, fn, options.requireAsync === true, options.requireContext === true]);
+    return this;
+  }
+
+  /**
+   * Bind a key-value pair to the context on every request
+   */
+  public set<const Key extends string, Handler extends Setter<State>[1]>(key: Key, fn: Handler, noexcept?: boolean): this {
+    this.handlers.push([noexcept === true ? 4 : 3, fn as any, key]);
+    return this;
+  }
+
+  /**
+   * Register a GET method handler for a path
+   */
+  public get<const Path extends string, const RouteHandler extends Route<State, []>>(path: Path, route: RouteHandler): this {
+    method_trees_register(this.trees, 'GET', path, [[this.handlers], route]);
+    return this;
   }
 
   // x[id] is the handler result

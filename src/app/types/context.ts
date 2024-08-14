@@ -96,4 +96,7 @@ export interface Context {
   status?: ContextStatus | (number & {});
   statusText?: StatusMap[ContextStatus] | (string & {});
   headers?: ContextHeaders;
+
+  // I will type this later
+  params: string[];
 }
