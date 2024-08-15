@@ -230,7 +230,7 @@ export function compileErrorHandlers(routeHandlers: ErrorRoutesData, addValue: A
     const key = keys[i] as unknown as number;
     const routeData = routeHandlers[key];
     const compiledResult = wrapRouteHandler(routeData[0], addValue, previousNotRequireContext, routeData[1] ? payload : '');
-    builder.push(`case ${key}:${compiledResult[1] ? '' : 'const c={status:200,headers:[]};'}return ${compiledResult[0]};`);
+    builder.push(compiledResult[1] ? `case ${key}:return ${compiledResult[0]};` : `case ${key}:{const c={status:200,headers:[]};return ${compiledResult[0]};}`);
   }
 
   builder.push('default:return sE;}');

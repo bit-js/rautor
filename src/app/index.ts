@@ -30,12 +30,8 @@ export class App<State extends GenericState> implements MethodProto {
 
   /** @internal */
   public catch(err: StaticError | DynamicError<any>, fn: any): this {
-    // Static error
-    if (Array.isArray(err))
-      this.errorHandlers[err[1]] = [fn, false];
-    else
-      this.errorHandlers[err.id] = [fn, true];
-
+    const isStaticError = Array.isArray(err);
+    this.errorHandlers[isStaticError ? err[1] : err.id] = [fn, !isStaticError];
     return this;
   }
 
