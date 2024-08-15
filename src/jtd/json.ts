@@ -99,20 +99,15 @@ export function jtd_json_assert_compile_conditions(schema: JTDSchema, paramName:
           // eslint-disable-next-line
           builder.push(`&&Object.keys(${paramName}).length===${typeof (schema as JTDPropertiesSchema).properties === 'undefined' ? 0 : Object.keys((schema as JTDPropertiesSchema).properties!).length}`);
         else {
-          builder.push(`&&Object.keys(${paramName}).every((o)=>${
-            // eslint-disable-next-line
-            Object.keys((schema as JTDPropertiesSchema).optionalProperties!).map((item) => `o===${JSON.stringify(item)}`).join('||')
-            }${typeof (schema as JTDPropertiesSchema).properties !== 'undefined'
-              ? ''
-              // eslint-disable-next-line
-              : Object.keys((schema as JTDPropertiesSchema).properties!).map((item) => `||o===${JSON.stringify(item)}`).join('')
-            })`);
+          // eslint-disable-next-line
+          builder.push(`&&Object.keys(${paramName}).every((o)=>${Object.keys((schema as JTDPropertiesSchema).optionalProperties!).map((item) => `o===${JSON.stringify(item)}`).join('||')}${typeof (schema as JTDPropertiesSchema).properties !== 'undefined' ? '' : Object.keys((schema as JTDPropertiesSchema).properties!).map((item) => `||o===${JSON.stringify(item)}`).join('')})`);
         }
       }
     } else if (key === 'discriminator') {
       if (isNullable) builder.push(`(${paramName}===null||typeof ${paramName}==='object'&&`);
       else builder.push(`typeof ${paramName}==='object'&&${paramName}!==null&&`);
 
+      // Object compilation results always output with prefix &&
       const discriminatorProp = chainProperty(paramName, (schema as JTDDiscriminatorSchema).discriminator);
 
       const discriminatorMapEntries = Object.entries((schema as JTDDiscriminatorSchema).mapping);
@@ -120,20 +115,20 @@ export function jtd_json_assert_compile_conditions(schema: JTDSchema, paramName:
 
       for (let i = 0; i < lastIdx; ++i) {
         const entry = discriminatorMapEntries[i];
-        builder.push(`${discriminatorProp}===${JSON.stringify(entry[0])}?`);
+        builder.push(`${discriminatorProp}===${JSON.stringify(entry[0])}?true`);
 
         const builderPrevLen = builder.length;
         jtd_json_assert_compile_conditions(entry[1], paramName, state, true);
-        builder.push(builder.length === builderPrevLen ? 'true:' : ':');
+        builder.push(builder.length === builderPrevLen ? '&&true:' : ':');
       }
 
       const lastEntry = discriminatorMapEntries[lastIdx];
-      builder.push(`${discriminatorProp}===${JSON.stringify(lastEntry[0])}&&`);
+      builder.push(`${discriminatorProp}===${JSON.stringify(lastEntry[0])}`);
 
       const builderPrevLen = builder.length;
       jtd_json_assert_compile_conditions(lastEntry[1], paramName, state, true);
       if (builder.length === builderPrevLen)
-        builder.push('true');
+        builder.push('&&true');
 
       if (isNullable) builder.push(')');
     } else if (key === 'type') {

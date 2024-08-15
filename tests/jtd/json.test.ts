@@ -47,7 +47,46 @@ test('Object schema', () => {
   })).toBe(false);
 });
 
-test('Ref', () => {
+test('Discriminator schema', () => {
+  const assert = create({
+    discriminator: 'type',
+    mapping: {
+      user: {
+        properties: {
+          name: { type: 'string' }
+        }
+      },
+      admin: {
+        properties: {
+          name: { type: 'string' },
+          pwd: { type: 'string' }
+        }
+      }
+    }
+  });
+  console.log(assert.toString());
+
+  expect(assert({
+    type: 'user',
+    name: 'a'
+  })).toBe(true);
+  expect(assert({
+    type: 'admin',
+    name: 'b'
+  })).toBe(false);
+  expect(assert({
+    type: 'admi',
+    name: 'c',
+    pwd: 't'
+  })).toBe(false);
+  expect(assert({
+    type: 'admin',
+    name: 'd',
+    pwd: 'k'
+  })).toBe(true);
+});
+
+test('Ref schema', () => {
   const assert = create({
     definitions: {
       node: {

@@ -5,7 +5,7 @@ import type { Context } from './types/context';
 import { isAsync } from './utils/constants';
 import serializeValue from './utils/serializeValue';
 import { chainProperty } from '../utils/identifier';
-import { compile_state_derive, compile_state_sync, type CompileState } from '../compiler';
+import { compile_state_derive, compile_state_sync, type AddValueCallback, type CompileState } from '../compiler';
 
 // Route types
 export type PlainRoute<State extends GenericState, Args extends any[]> = (...args: [...Args, Context & State]) => ConstructorParameters<typeof Response>[0];
@@ -27,12 +27,45 @@ export interface StaticRoute {
 export type Route<State extends GenericState, Args extends any[]> = PlainRoute<State, Args> | FormattedRoute<State, Args, any> | StaticRoute;
 
 export type GenericRoute = Route<GenericState, []>;
-export type RouteData = [handlers: HandlerGroupData[], route: unknown];
+export type RouteData = [handlers: HandlerGroupData[], route: unknown, errorHandlers: ErrorRoutesData];
+export type ErrorRoutesData = Record<number, [route: GenericRoute, isDynamic: boolean]>;
 
 // Compile route
 type AppCompileState = [...CompileState<RouteData>, compiledGroups: WeakMap<HandlerGroupData, [result: string, requireAsync: boolean, notRequireContext: boolean]>, handlerIdx: number];
 
-export function compileRoute(item: RouteData, state: CompileState<RouteData>, isParam: boolean): void {
+export function wrapRouteHandler(routeHandler: GenericRoute, addValue: AddValueCallback, previousNotRequireContext: boolean, arg: string): [string, notRequireContext: boolean] {
+  if (typeof routeHandler === 'function') {
+    const noFirstArg = arg.length === 0;
+    // Last handler may still requires the context
+    const notRequireContext = routeHandler.length === (noFirstArg ? 0 : 1);
+
+    // Pass the return value to a Response object
+    return [
+      isAsync(routeHandler)
+        ? notRequireContext
+          ? `${addValue(routeHandler)}(${noFirstArg ? '' : arg}).then((o)=>new Response(o${previousNotRequireContext ? '' : ',c'}))`
+          : `${addValue(routeHandler)}(${noFirstArg ? '' : `${arg},`}c).then((o)=>new Response(o,c))`
+        : notRequireContext
+          ? `new Response(${addValue(routeHandler)}(${noFirstArg ? '' : arg})${previousNotRequireContext ? '' : ',c'})`
+          : `new Response(${addValue(routeHandler)}(${noFirstArg ? '' : `${arg},`}c),c)`,
+      notRequireContext
+    ];
+  }
+
+  const routeType = routeHandler.type;
+
+  if (routeType === 'static') {
+    // @ts-expect-error Options
+    // eslint-disable-next-line
+    const res = new Response(serializeValue(routeHandler.body), routeHandler.options);
+    return [`return ${addValue(res)}${res.body === null ? '' : '.clone()'};`, true];
+  }
+
+  // TODO: JSON
+  return ['', true];
+}
+
+export function compileRouteData(item: RouteData, state: CompileState<RouteData>, isParam: boolean): void {
   // States for optimizations
   let isHandlerAsync = false;
   let noContext = true;
@@ -43,6 +76,7 @@ export function compileRoute(item: RouteData, state: CompileState<RouteData>, is
 
   // Compile and cache handler groups
   const handlerGroups = item[0];
+  const handlerErrorHandlers = item[2];
   // @ts-expect-error Compiler hack
   const compiledGroups = (state as AppCompileState)[5];
 
@@ -119,17 +153,18 @@ export function compileRoute(item: RouteData, state: CompileState<RouteData>, is
           // @ts-expect-error Compiler hack to track result id
           const curId = (state as AppCompileState)[6];
 
-          if (handlerType === 1)
-            groupResultBuilder.push(`const x${curId}=${handlerCall}if(x${curId} instanceof Response)return x${curId};`);
-          else if (handlerType === 2)
+          if (handlerType === 1) {
+            groupResultBuilder.push(`const x${curId}=${handlerCall}${compileErrorHandlers(handlerErrorHandlers, addValue, noContext, `x${curId}`)}`);
+            // @ts-expect-error Compiler hack
+            (state as AppCompileState)[6]++;
+          } else if (handlerType === 2)
             groupResultBuilder.push(handlerCall);
-          else if (handlerType === 3)
-            groupResultBuilder.push(`const x${curId}=${handlerCall}if(x${curId} instanceof Response)return x${curId};${chainProperty('c', handlerData[2])}=x${curId};`);
-          else
+          else if (handlerType === 3) {
+            groupResultBuilder.push(`const x${curId}=${handlerCall}${compileErrorHandlers(handlerErrorHandlers, addValue, noContext, `x${curId}`)}${chainProperty('c', handlerData[2])}=x${curId};`);
+            // @ts-expect-error Compiler hack
+            (state as AppCompileState)[6]++;
+          } else
             groupResultBuilder.push(`${chainProperty('c', handlerData[2])}=${handlerCall}`);
-
-          // @ts-expect-error Compiler hack
-          (state as AppCompileState)[6]++;
         }
       }
 
@@ -158,39 +193,46 @@ export function compileRoute(item: RouteData, state: CompileState<RouteData>, is
   }
 
   // Compile route handler
-  const routeHandler = item[1] as GenericRoute;
-  if (typeof routeHandler === 'function') {
-    // Last handler may still requires the context
-    const notRequireContext = routeHandler.length === 0;
-    if (!notRequireContext && noContext) {
-      builder.push(`const c={status:200,headers:[]${isParam ? ',params:a' : ''}};`);
-      noContext = false;
-    }
-
-    // Pass the return value to a Response object
-    builder.push(isAsync(routeHandler)
-      ? notRequireContext
-        ? `return ${addValue(routeHandler)}().then((o)=>new Response(o${noContext ? '' : ',c'}));`
-        : `return ${addValue(routeHandler)}(c).then((o)=>new Response(o,c));`
-      : notRequireContext
-        ? `return new Response(${addValue(routeHandler)}()${noContext ? '' : ',c'});`
-        : `return new Response(${addValue(routeHandler)}(c),c);`);
-
-    // Must be after to track whether context has been created before
-    noContext &&= notRequireContext;
-  } else {
-    const routeType = routeHandler.type;
-
-    if (routeType === 'static') {
-      // @ts-expect-error Options
-      // eslint-disable-next-line
-      const res = new Response(serializeValue(routeHandler.body), routeHandler.options);
-      builder.push(`return ${addValue(res)}${res.body === null ? '' : '.clone()'};`);
-    }
-
-    // TODO: JSON
+  const compiledResult = wrapRouteHandler(item[1] as GenericRoute, addValue, noContext, '');
+  if (!compiledResult[1] && noContext) {
+    builder.push(`const c={status:200,headers:[]${isParam ? ',params:a' : ''}};`);
+    noContext = false;
   }
+
+  builder.push('return ', compiledResult[0], ';');
 
   // Close the async scope
   if (isHandlerAsync) builder.push('})();');
+}
+
+export function compileErrorHandlers(routeHandlers: ErrorRoutesData, addValue: AddValueCallback, previousNotRequireContext: boolean, resultSymbol: string): string {
+  const keys = Object.keys(routeHandlers);
+  const keyLen = keys.length;
+
+  // No error handler
+  if (keyLen === 0)
+    return `if(Array.isArray(${resultSymbol})&&${resultSymbol}[0]===eS)`;
+
+  const payload = `${resultSymbol}[2]`;
+
+  // Compile only one error handler
+  if (keyLen === 1) {
+    const key = keys[0] as unknown as number;
+    const routeData = routeHandlers[key];
+    const compiledResult = wrapRouteHandler(routeData[0], addValue, previousNotRequireContext, routeData[1] ? payload : '');
+    return `if(Array.isArray(${resultSymbol})&&${resultSymbol}[0]===eS){${compiledResult[1] ? '' : 'const c={status:200,headers:[]};'}return ${resultSymbol}[1]===${key}?${compiledResult[0]}:sE;}`;
+  }
+
+  // Compile multiple error handlers
+  const builder: string[] = [`if(Array.isArray(${resultSymbol})&&${resultSymbol}[0]===eS)switch(${resultSymbol}[1]){`];
+
+  for (let i = 0; i < keyLen; ++i) {
+    const key = keys[i] as unknown as number;
+    const routeData = routeHandlers[key];
+    const compiledResult = wrapRouteHandler(routeData[0], addValue, previousNotRequireContext, routeData[1] ? payload : '');
+    builder.push(`case ${key}:${compiledResult[1] ? '' : 'const c={status:200,headers:[]};'}return ${compiledResult[0]};`);
+  }
+
+  builder.push('default:return sE;}');
+  return builder.join('');
 }
