@@ -205,6 +205,57 @@ export function jtd_json_assert_compile_conditions(schema: JTDSchema, paramName:
 }
 
 // eslint-disable-next-line
+export function jtd_json_serializer_compile<const T extends RootJTDSchema>(schema: T, paramName: string, state: CompileState<any>): void {
+  if (typeof schema.definitions === 'undefined')
+    jtd_json_serializer_compile_template_body(schema, paramName, [state[0], null]);
+}
+
+// eslint-disable-next-line
+export function jtd_json_serializer_compile_template_body(schema: JTDSchema, paramName: string, state: JTDCompileState): void {
+  const builder = state[0];
+
+  let isObjectSchema = false;
+
+  for (const key in schema) {
+    if (key === 'properties') {
+      // eslint-disable-next-line
+      const props = (schema as JTDPropertiesSchema).properties!;
+
+      if (!isObjectSchema) {
+        builder.push('{');
+        isObjectSchema = true;
+      }
+
+      for (const objKey in props) {
+        builder.push(`${JSON.stringify(objKey)}:`);
+        jtd_json_serializer_compile_template_body(props[objKey], chainProperty(paramName, objKey), state);
+        builder.push(',');
+      }
+    } else if (key === 'optionalProperties') {
+      // eslint-disable-next-line
+      const props = (schema as JTDPropertiesSchema).optionalProperties!;
+
+      if (!isObjectSchema) {
+        builder.push('{');
+        isObjectSchema = true;
+      }
+
+      for (const objKey in props) {
+        const propName = chainProperty(paramName, objKey);
+
+        builder.push(`\${typeof ${propName}==='undefined'?'':\`${JSON.stringify(objKey)}:`);
+        jtd_json_serializer_compile_template_body(props[objKey], chainProperty(paramName, objKey), state);
+        builder.push(',`}');
+      }
+    }
+  }
+
+  // Replace the last ',' with '}' or ',`}' with '`}}'
+  if (isObjectSchema)
+    builder[builder.length - 1] = builder[builder.length - 1].length === 1 ? '}' : '`}}';
+}
+
+// eslint-disable-next-line
 export function jtd_json_create_assert_func<const T extends RootJTDSchema>(schema: T): (o: any) => o is InferRootJTDSchema<T> {
   const keys: string[] = [];
   const values: any[] = [];
